@@ -7,9 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useDemoState } from "@/hooks/use-demo-state";
-import { clearDemoData, EXPLORER-less } from "@/lib/demo-shim";
+import { clearDemoData, type EventType } from "@/lib/demo";
 import { explorerTxUrl } from "@/lib/chain";
-import type { EventType } from "@/lib/demo";
 
 export const Route = createFileRoute("/activity")({
   head: () => ({
