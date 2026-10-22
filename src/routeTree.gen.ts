@@ -10,33 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as BuyRouteImport } from './routes/buy'
+import { Route as DemoRouteImport } from './routes/demo'
+import { Route as OracleRouteImport } from './routes/oracle'
+import { Route as PoliciesRouteImport } from './routes/policies'
+import { Route as PoolRouteImport } from './routes/pool'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ActivityRoute = ActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuyRoute = BuyRouteImport.update({
+  id: '/buy',
+  path: '/buy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRoute = DemoRouteImport.update({
+  id: '/demo',
+  path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OracleRoute = OracleRouteImport.update({
+  id: '/oracle',
+  path: '/oracle',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoliciesRoute = PoliciesRouteImport.update({
+  id: '/policies',
+  path: '/policies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PoolRoute = PoolRouteImport.update({
+  id: '/pool',
+  path: '/pool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/buy': typeof BuyRoute
+  '/demo': typeof DemoRoute
+  '/oracle': typeof OracleRoute
+  '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/buy': typeof BuyRoute
+  '/demo': typeof DemoRoute
+  '/oracle': typeof OracleRoute
+  '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activity': typeof ActivityRoute
+  '/buy': typeof BuyRoute
+  '/demo': typeof DemoRoute
+  '/oracle': typeof OracleRoute
+  '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    '/' | '/activity' | '/buy' | '/demo' | '/oracle' | '/policies' | '/pool'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/activity' | '/buy' | '/demo' | '/oracle' | '/policies' | '/pool'
+  id:
+    | '__root__'
+    | '/'
+    | '/activity'
+    | '/buy'
+    | '/demo'
+    | '/oracle'
+    | '/policies'
+    | '/pool'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivityRoute: typeof ActivityRoute
+  BuyRoute: typeof BuyRoute
+  DemoRoute: typeof DemoRoute
+  OracleRoute: typeof OracleRoute
+  PoliciesRoute: typeof PoliciesRoute
+  PoolRoute: typeof PoolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +117,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/activity': {
+      id: '/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof ActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/buy': {
+      id: '/buy'
+      path: '/buy'
+      fullPath: '/buy'
+      preLoaderRoute: typeof BuyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo': {
+      id: '/demo'
+      path: '/demo'
+      fullPath: '/demo'
+      preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/oracle': {
+      id: '/oracle'
+      path: '/oracle'
+      fullPath: '/oracle'
+      preLoaderRoute: typeof OracleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/policies': {
+      id: '/policies'
+      path: '/policies'
+      fullPath: '/policies'
+      preLoaderRoute: typeof PoliciesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pool': {
+      id: '/pool'
+      path: '/pool'
+      fullPath: '/pool'
+      preLoaderRoute: typeof PoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivityRoute: ActivityRoute,
+  BuyRoute: BuyRoute,
+  DemoRoute: DemoRoute,
+  OracleRoute: OracleRoute,
+  PoliciesRoute: PoliciesRoute,
+  PoolRoute: PoolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
