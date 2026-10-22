@@ -58,7 +58,7 @@ function OraclePage() {
   const [endDate, setEndDate] = useState("");
   const [realReport, setRealReport] = useState<RainfallReport | null>(null);
   const [fetching, setFetching] = useState(false);
-  const [scenario, setScenario] = useState<{ label: string; report: RainfallReport } | null>(null);
+  const [scenario, setScenario] = useState<{ kind: "low" | "normal"; label: string; report: RainfallReport } | null>(null);
   const [selectedPolicyId, setSelectedPolicyId] = useState("");
 
   const activePolicies = demo.policies.filter((p) => p.status === "active");
@@ -104,6 +104,7 @@ function OraclePage() {
     });
     setRealReport(null);
     setScenario({
+      kind,
       label: kind === "low" ? "Low-rainfall scenario" : "Normal-rainfall scenario",
       report: {
         source: `Simulated oracle report — ${kind === "low" ? "dry" : "normal"} season (not real data)`,
@@ -123,7 +124,7 @@ function OraclePage() {
     const policy: DemoPolicy | null = applyRainfallToPolicy(
       policyId,
       report.totalMm,
-      scenario ? "low" : "real",
+      scenario ? scenario.kind : "real",
       report.source,
     );
     if (policy) {
