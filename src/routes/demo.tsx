@@ -7,7 +7,7 @@ import { OnchainPendingNotice, PageHeader, PolicyStatusBadge, SimulatedBadge } f
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDemoState } from "@/hooks/use-demo-state";
-import { applyRainfallToPolicy, claimPayout, type DemoPolicy } from "@/lib/demo";
+import { applyRainfallToPolicy, claimPayout, createDemoPolicy, type DemoPolicy } from "@/lib/demo";
 import { isPayoutEligible } from "@/lib/premium";
 
 export const Route = createFileRoute("/demo")({
@@ -43,7 +43,7 @@ function DemoPage() {
     const start = new Date();
     const end = new Date(start.getTime() + 29 * 86_400_000);
     const iso = (d: Date) => d.toISOString().slice(0, 10);
-    const policy = createDemoPolicySafe({
+    const policy = createDemoPolicy({
       locationName: "Cherrapunji, Meghalaya",
       latitude: 25.28,
       longitude: 91.7,
@@ -152,7 +152,7 @@ function DemoPage() {
                           : "border-border text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {p.id} · <PolicyStatusInline id={p.id} />
+                      {p.id} · {p.status.replace("_", " ")}
                     </button>
                   ))}
                 </div>
@@ -259,23 +259,3 @@ function DemoPage() {
   );
 }
 
-function PolicyStatusInline({ id }: { id: string }) {
-  return <StatusText id={id} />;
-}
-
-function StatusText({ id }: { id: string }) {
-  // Rendered inside a small chip; the status badge alone would be too wide.
-  const state = useDemoState();
-  const p = state.policies.find((x) => x.id === id);
-  if (!p) return null;
-  const label: Record<string, string> = {
-    active: "active",
-    eligible: "eligible",
-    paid: "paid out",
-    not_eligible: "no payout",
-    expired: "expired",
-  };
-  return <span>{label[p.status]}</span>;
-}
-
-import { createDemoPolicy as createDemoPolicySafe } from "@/lib/demo";
