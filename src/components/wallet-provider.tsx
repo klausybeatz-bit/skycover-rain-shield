@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { isSepolia, SEPOLIA_CHAIN_NAME } from "@/lib/chain";
+import { isSepolia } from "@/lib/wallet";
 import {
   connectWallet,
+  getChainId,
   getWalletBalance,
   hasMetaMask,
-  isSepolia as checkSepolia,
   shortenAddress,
   switchToSepolia,
 } from "@/lib/wallet";
@@ -24,6 +24,11 @@ interface WalletState {
 }
 
 const WalletContext = createContext<WalletState | null>(null);
+
+interface Eip1193WithEvents {
+  on(event: string, cb: (...args: unknown[]) => void): void;
+  removeListener(event: string, cb: (...args: unknown[]) => void): void;
+}
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
@@ -48,15 +53,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const { address: addr, chainId: cid } = await connectWallet();
       setAddress(addr);
       setChainId(cid);
-      if (cid !== isSepolia(cid) ? undefined : undefined) {
-        // no-op guard removed below
-      }
-      if (cid !== undefined && !checkSepolia(cid)) {
+      if (!isSepolia(cid)) {
         try {
           await switchToSepolia();
-          setChainId(await getChainIdSafe());
+          setChainId(await getChainId());
         } catch {
-          /* user rejected the switch — keep them connected on the wrong chain */
+          /* user rejected the switch — stay connected on the current chain */
         }
       }
       try {
@@ -75,7 +77,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setError(null);
     try {
       await switchToSepolia();
-      setChainId(await getChainIdSafe());
+      setChainId(await getChainId());
       await refreshBalance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to switch network");
@@ -91,21 +93,21 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const eth = (window as unknown as { ethereum?: { on?: (e: string, cb: (...args: unknown[]) => void) => void } }).ethereum;
+    const eth = (window as unknown as { ethereum?: Eip1193WithEvents }).ethereum;
     if (!eth?.on) return;
     const onAccounts = (accounts: unknown[]) => {
       if (!Array.isArray(accounts) || accounts.length === 0) {
         disconnect();
       } else {
-        setAddress(accounts[0] as string);
+        setAddress(String(accounts[0]));
       }
     };
     const onChain = (cid: unknown) => setChainId(Number.parseInt(String(cid), 16));
     eth.on("accountsChanged", onAccounts);
     eth.on("chainChanged", onChain);
     return () => {
-      eth.on("accountsChanged", onAccounts);
-      eth.on("chainChanged", onChain);
+      eth.removeListener("accountsChanged", onAccounts);
+      eth.removeListener("chainChanged", onChain);
     };
   }, [disconnect]);
 
@@ -126,15 +128,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
-async function getChainIdSafe(): Promise<number> {
-  const { getChainId } = await import("@/lib/wallet");
-  return getChainId();
-}
-
 export function useWallet(): WalletState {
   const ctx = useContext(WalletContext);
   if (!ctx) throw new Error("useWallet must be used inside WalletProvider");
   return ctx;
 }
 
-export { shortenAddress, SEPOLIA_CHAIN_NAME };
+export { shortenAddress };
