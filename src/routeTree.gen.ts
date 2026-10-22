@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as PoliciesRouteImport } from './routes/policies'
+import { Route as PoolRouteImport } from './routes/pool'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const PoliciesRoute = PoliciesRouteImport.update({
   path: '/policies',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PoolRoute = PoolRouteImport.update({
+  id: '/pool',
+  path: '/pool',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/buy': typeof BuyRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/buy': typeof BuyRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/buy': typeof BuyRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
+  '/pool': typeof PoolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/buy' | '/oracle' | '/policies'
+  fullPaths: '/' | '/buy' | '/oracle' | '/policies' | '/pool'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/buy' | '/oracle' | '/policies'
-  id: '__root__' | '/' | '/buy' | '/oracle' | '/policies'
+  to: '/' | '/buy' | '/oracle' | '/policies' | '/pool'
+  id: '__root__' | '/' | '/buy' | '/oracle' | '/policies' | '/pool'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   BuyRoute: typeof BuyRoute
   OracleRoute: typeof OracleRoute
   PoliciesRoute: typeof PoliciesRoute
+  PoolRoute: typeof PoolRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliciesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pool': {
+      id: '/pool'
+      path: '/pool'
+      fullPath: '/pool'
+      preLoaderRoute: typeof PoolRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuyRoute: BuyRoute,
   OracleRoute: OracleRoute,
   PoliciesRoute: PoliciesRoute,
+  PoolRoute: PoolRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
