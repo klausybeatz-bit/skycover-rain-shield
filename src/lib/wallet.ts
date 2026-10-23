@@ -26,10 +26,11 @@ export async function connectWallet(): Promise<{ address: string; chainId: numbe
   if (!eth) throw new Error("MetaMask not detected. Install the MetaMask browser extension to connect.");
 
   const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-  if (!accounts?.length) throw new Error("No accounts returned by MetaMask.");
+  const [first] = accounts ?? [];
+  if (!first) throw new Error("No accounts returned by MetaMask.");
 
   const chainId = await getChainId();
-  return { address: accounts[0], chainId };
+  return { address: first, chainId };
 }
 
 export async function getChainId(): Promise<number> {

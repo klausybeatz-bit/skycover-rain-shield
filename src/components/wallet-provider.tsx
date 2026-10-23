@@ -95,14 +95,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return;
     const eth = (window as unknown as { ethereum?: Eip1193WithEvents }).ethereum;
     if (!eth?.on) return;
-    const onAccounts = (accounts: unknown[]) => {
+    const onAccounts = (...args: unknown[]) => {
+      const accounts = args[0];
       if (!Array.isArray(accounts) || accounts.length === 0) {
         disconnect();
       } else {
         setAddress(String(accounts[0]));
       }
     };
-    const onChain = (cid: unknown) => setChainId(Number.parseInt(String(cid), 16));
+    const onChain = (...args: unknown[]) => setChainId(Number.parseInt(String(args[0]), 16));
     eth.on("accountsChanged", onAccounts);
     eth.on("chainChanged", onChain);
     return () => {

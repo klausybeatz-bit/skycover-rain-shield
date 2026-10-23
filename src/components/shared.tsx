@@ -40,10 +40,16 @@ export function PolicyStatusBadge({ status }: { status: PolicyStatus }) {
   );
 }
 
-export function SimulatedBadge({ className }: { className?: string }) {
+export function SimulatedBadge({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <Badge variant="outline" className={cn("border-warning/40 text-warning", className)}>
-      Simulated
+      {children ?? "Simulated"}
     </Badge>
   );
 }

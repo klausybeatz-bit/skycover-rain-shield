@@ -46,7 +46,7 @@ function BuyPage() {
   const [thresholdMm, setThresholdMm] = useState(50);
   const [coverageEth, setCoverageEth] = useState("0.1");
 
-  const location = LOCATION_PRESETS[Number(locationIdx)] ?? LOCATION_PRESETS[0];
+  const location = LOCATION_PRESETS[Number(locationIdx)] ?? LOCATION_PRESETS[0]!;
   const days = useMemo(
     () => (startDate && endDate ? coverageDays(startDate, endDate) : 0),
     [startDate, endDate],

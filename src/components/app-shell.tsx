@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isOnchainEnabled, SEPOLIA_CHAIN_NAME } from "@/lib/chain";
 import { useWallet } from "@/components/wallet-provider";
+import { shortenAddress } from "@/lib/wallet";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
