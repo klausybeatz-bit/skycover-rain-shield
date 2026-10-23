@@ -68,7 +68,10 @@ function DemoPage() {
       kind,
       "Simulated oracle report — controlled demo scenario (not real data)",
     );
-    if (!updated) return toast.error("Policy is not in an evaluable state.");
+    if (!updated) {
+      toast.error("Policy is not in an evaluable state.");
+      return;
+    }
     setOutcome({ policy: updated, paid: false });
     toast[kind === "low" ? "success" : "info"](
       `Rainfall recorded: ${total} mm vs ${updated.thresholdMm} mm threshold — ${isPayoutEligible(total, updated.thresholdMm) ? "payout eligible" : "no payout"}`,

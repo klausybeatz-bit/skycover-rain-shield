@@ -43,14 +43,23 @@ function PoolPage() {
       : 0;
 
   function deposit() {
-    if (value <= 0) return toast.error("Enter an amount above 0");
+    if (value <= 0) {
+      toast.error("Enter an amount above 0");
+      return;
+    }
     recordPoolActivity("pool_deposit", value);
     toast.success(`Deposited ${value} ETH into the demo pool`);
   }
 
   function withdraw() {
-    if (value <= 0) return toast.error("Enter an amount above 0");
-    if (value > demo.pool.balanceEth) return toast.error("Amount exceeds available liquidity");
+    if (value <= 0) {
+      toast.error("Enter an amount above 0");
+      return;
+    }
+    if (value > demo.pool.balanceEth) {
+      toast.error("Amount exceeds available liquidity");
+      return;
+    }
     recordPoolActivity("pool_withdraw", value);
     toast.success(`Withdrew ${value} ETH from the demo pool`);
   }

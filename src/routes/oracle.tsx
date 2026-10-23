@@ -62,7 +62,7 @@ function OraclePage() {
   const [selectedPolicyId, setSelectedPolicyId] = useState("");
 
   const activePolicies = demo.policies.filter((p) => p.status === "active");
-  const location = LOCATION_PRESETS[Number(locationIdx)] ?? LOCATION_PRESETS[0];
+  const location = LOCATION_PRESETS[Number(locationIdx)] ?? LOCATION_PRESETS[0]!;
   const report = scenario?.report ?? realReport;
 
   // Default the range to the last 30 days once hydrated (avoids SSR/client mismatch).
@@ -98,10 +98,7 @@ function OraclePage() {
     const days = Math.max(1, Math.round((Date.parse(endDate) - Date.parse(startDate)) / 86_400_000) + 1 || 30);
     const total = kind === "low" ? Math.round(threshold * 0.4 * 10) / 10 : Math.round(threshold * 1.6 * 10) / 10;
     const perDay = scenarioRainfall(policy?.id ?? "SC-0000", total, Math.min(days, 30));
-    const dates = perDay.map((_, i) => {
-      const d = new Date(Date.parse(startDate || "2026-01-01") + i * 86_400_000);
-      return d.toISOString().slice(0, 10);
-    });
+    const baseMs = Date.parse(startDate || "2026-01-01");
     setRealReport(null);
     setScenario({
       kind,
@@ -112,7 +109,10 @@ function OraclePage() {
         longitude: location.longitude,
         timezone: "simulated",
         unit: "mm",
-        daily: perDay.map((mm, i) => ({ date: dates[i], mm })),
+        daily: perDay.map((mm, i) => ({
+          date: new Date(baseMs + i * 86_400_000).toISOString().slice(0, 10),
+          mm,
+        })),
         totalMm: total,
         fetchedAt: new Date().toISOString(),
       },
