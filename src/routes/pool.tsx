@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ArrowDownToLine, ArrowUpFromLine, Droplet, Landmark, PiggyBank, Wallet } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { OnchainPendingNotice, PageHeader, SimulatedBadge } from "@/components/shared";
@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useWallet } from "@/components/wallet-provider";
 import { useDemoState } from "@/hooks/use-demo-state";
+import { isOnchainEnabled } from "@/lib/chain";
+import { depositPoolOnchain, readPoolStats, withdrawPoolOnchain } from "@/lib/contract";
 import { recordPoolActivity } from "@/lib/demo";
 
 export const Route = createFileRoute("/pool")({
@@ -34,30 +37,87 @@ export const Route = createFileRoute("/pool")({
 
 function PoolPage() {
   const demo = useDemoState();
+  const wallet = useWallet();
   const [amount, setAmount] = useState("0.5");
+  const [busy, setBusy] = useState(false);
+  const [onchainPool, setOnchainPool] = useState<typeof demo.pool | null>(null);
   const value = Number(amount) || 0;
 
+  async function refreshOnchainPool() {
+    try {
+      const stats = await readPoolStats();
+      setOnchainPool({
+        balanceEth: stats.balanceEth,
+        premiumsCollectedEth: stats.premiumsEth,
+        payoutsEth: stats.payoutsEth,
+      });
+    } catch {
+      /* keep the demo figures until the wallet/contract responds */
+    }
+  }
+
+  useEffect(() => {
+    if (!isOnchainEnabled()) return;
+    void refreshOnchainPool();
+  }, []);
+
+  const pool = onchainPool ?? demo.pool;
+
   const utilization =
-    demo.pool.payoutsEth + demo.pool.balanceEth > 0
-      ? (demo.pool.payoutsEth / (demo.pool.payoutsEth + demo.pool.balanceEth)) * 100
+    pool.payoutsEth + pool.balanceEth > 0
+      ? (pool.payoutsEth / (pool.payoutsEth + pool.balanceEth)) * 100
       : 0;
 
-  function deposit() {
+  async function deposit() {
     if (value <= 0) {
       toast.error("Enter an amount above 0");
+      return;
+    }
+    if (isOnchainEnabled() && wallet.address) {
+      setBusy(true);
+      try {
+        const result = await depositPoolOnchain(value);
+        recordPoolActivity("pool_deposit", value, result.txHash);
+        await refreshOnchainPool();
+        toast.success(`Deposited ${value} ETH on-chain`, {
+          description: `Transaction ${result.txHash.slice(0, 10)}… confirmed on Sepolia.`,
+          action: { label: "View", onClick: () => window.open(result.explorerUrl, "_blank") },
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Deposit transaction failed");
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     recordPoolActivity("pool_deposit", value);
     toast.success(`Deposited ${value} ETH into the demo pool`);
   }
 
-  function withdraw() {
+  async function withdraw() {
     if (value <= 0) {
       toast.error("Enter an amount above 0");
       return;
     }
-    if (value > demo.pool.balanceEth) {
+    if (value > pool.balanceEth) {
       toast.error("Amount exceeds available liquidity");
+      return;
+    }
+    if (isOnchainEnabled() && wallet.address) {
+      setBusy(true);
+      try {
+        const result = await withdrawPoolOnchain(value);
+        recordPoolActivity("pool_withdraw", value, result.txHash);
+        await refreshOnchainPool();
+        toast.success(`Withdrew ${value} ETH on-chain`, {
+          description: `Transaction ${result.txHash.slice(0, 10)}… confirmed on Sepolia.`,
+          action: { label: "View", onClick: () => window.open(result.explorerUrl, "_blank") },
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Withdraw transaction failed");
+      } finally {
+        setBusy(false);
+      }
       return;
     }
     recordPoolActivity("pool_withdraw", value);
@@ -79,9 +139,9 @@ function PoolPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Landmark} label="Pool balance" value={`${demo.pool.balanceEth.toFixed(2)} ETH`} highlight />
-        <Stat icon={PiggyBank} label="Premiums collected" value={`${demo.pool.premiumsCollectedEth.toFixed(2)} ETH`} />
-        <Stat icon={Droplet} label="Payouts made" value={`${demo.pool.payoutsEth.toFixed(2)} ETH`} />
+        <Stat icon={Landmark} label="Pool balance" value={`${pool.balanceEth.toFixed(2)} ETH`} highlight />
+        <Stat icon={PiggyBank} label="Premiums collected" value={`${pool.premiumsCollectedEth.toFixed(2)} ETH`} />
+        <Stat icon={Droplet} label="Payouts made" value={`${pool.payoutsEth.toFixed(2)} ETH`} />
         <Stat icon={Wallet} label="Utilization" value={`${utilization.toFixed(1)}%`} />
       </div>
 
@@ -89,7 +149,7 @@ function PoolPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <ArrowDownToLine className="size-5 text-primary" /> Provider actions
+              <ArrowDownToLine className="size-5 text-terracotta" /> Provider actions
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -105,17 +165,35 @@ function PoolPage() {
               />
             </div>
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={deposit}>
-                Deposit
+              <Button
+                className="flex-1"
+                onClick={deposit}
+                disabled={!wallet.address || busy}
+                title={!wallet.address ? "Connect wallet first" : undefined}
+              >
+                {busy ? "Confirm in MetaMask…" : "Deposit"}
               </Button>
-              <Button className="flex-1" variant="secondary" onClick={withdraw}>
+              <Button
+                className="flex-1"
+                variant="secondary"
+                onClick={withdraw}
+                disabled={!wallet.address || busy}
+                title={!wallet.address ? "Connect wallet first" : undefined}
+              >
                 Withdraw
               </Button>
             </div>
-            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <SimulatedBadge /> Deposits and withdrawals move simulated ETH inside the demo pool.
-              They earn no yield and involve no funds.
-            </p>
+            {isOnchainEnabled() ? (
+              <p className="text-xs text-muted-foreground">
+                Deposits and withdrawals are signed with MetaMask and move real Sepolia testnet ETH
+                through the pool contract.
+              </p>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <SimulatedBadge /> Deposits and withdrawals move simulated ETH inside the demo pool.
+                They earn no yield and involve no funds.
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -159,9 +237,9 @@ function Stat({
   highlight?: boolean;
 }) {
   return (
-    <Card className={highlight ? "card-glow border-primary/40" : undefined}>
+    <Card className={highlight ? "card-glow border-terracotta/40" : undefined}>
       <CardContent className="pt-6">
-        <Icon className="size-5 text-primary" />
+        <Icon className="size-5 text-terracotta" />
         <div className="mt-3 text-xs text-muted-foreground">{label}</div>
         <div className="font-display text-2xl font-semibold">{value}</div>
       </CardContent>

@@ -1,22 +1,30 @@
-@import "tailwindcss" source(none);
+@import "tailwindcss";
 @source "../src";
-@import "tw-animate-css";
+@import "../node_modules/tw-animate-css/dist/tw-animate.css";
 
+/* tailwindcss v4 */
 @custom-variant dark (&:is(.dark *));
 
 /*
- * SkyCover design system — premium climate-fintech.
- * Single dark navy theme: deep navy surfaces, sky-blue primary, teal accent.
- * All colors in oklch. Fonts are loaded via <link> in src/routes/__root.tsx.
+ * SkyCover design system — warm editorial climate-fintech.
+ *
+ * Foundation: warm ivory page, pure-white surfaces, charcoal type, soft
+ * borders. Accents are assigned by meaning (terracotta = action, dusty blue =
+ * rainfall data, lavender/plum = policy, sage = eligible, amber = warning) so
+ * each section has one dominant accent while the site stays harmonious.
+ *
+ * Fonts are loaded via <link> in src/routes/__root.tsx
+ * (Manrope + DM Sans + DM Serif Display).
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -41,36 +49,109 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-glow: var(--glow);
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* Accent palette. Soft tones are for surfaces/fills; *-strong tones meet
+     AA contrast when used as text on the ivory or white backgrounds. */
+  --color-terracotta: var(--terracotta);
+  --color-terracotta-strong: var(--terracotta-strong);
+  --color-coral: var(--coral);
+  --color-lavender: var(--lavender);
+  --color-lavender-strong: var(--lavender-strong);
+  --color-plum: var(--plum);
+  --color-forest: var(--forest);
+  --color-forest-strong: var(--forest-strong);
+  --color-forest-tint: var(--forest-tint);
+  --color-amber: var(--amber);
+  --color-amber-strong: var(--amber-strong);
+  --color-sage: var(--sage);
+  --color-sage-strong: var(--sage-strong);
+  --color-rain: var(--rain);
+  --color-rain-strong: var(--rain-strong);
+
+  --font-display: "Manrope", "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "DM Serif Display", "Iowan Old Style", Georgia, serif;
+
+  /* Radix accordion open/close heights (used by ui/accordion.tsx) */
+  --animate-accordion-down: accordion-down 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-accordion-up: accordion-up 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+
+  to {
+    height: 0;
+  }
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.16 0.038 256);
-  --foreground: oklch(0.95 0.012 240);
-  --card: oklch(0.205 0.042 256);
-  --card-foreground: oklch(0.95 0.012 240);
-  --popover: oklch(0.205 0.042 256);
-  --popover-foreground: oklch(0.95 0.012 240);
-  --primary: oklch(0.76 0.128 235);
-  --primary-foreground: oklch(0.16 0.038 256);
-  --secondary: oklch(0.27 0.048 256);
-  --secondary-foreground: oklch(0.93 0.015 240);
-  --muted: oklch(0.25 0.044 256);
-  --muted-foreground: oklch(0.7 0.032 248);
-  --accent: oklch(0.82 0.125 195);
-  --accent-foreground: oklch(0.16 0.038 256);
-  --destructive: oklch(0.62 0.2 20);
-  --destructive-foreground: oklch(0.97 0.01 20);
-  --success: oklch(0.76 0.14 165);
-  --success-foreground: oklch(0.16 0.038 256);
-  --warning: oklch(0.8 0.13 80);
-  --warning-foreground: oklch(0.2 0.05 80);
-  --border: oklch(0.95 0.02 240 / 12%);
-  --input: oklch(0.95 0.02 240 / 16%);
-  --ring: oklch(0.76 0.128 235);
-  --glow: oklch(0.76 0.128 235 / 35%);
+  --radius: 0.875rem;
+
+  /* Base — warm ivory */
+  --background: #faf8f3;
+  --foreground: #252525;
+  --card: #ffffff;
+  --card-foreground: #252525;
+  --popover: #ffffff;
+  --popover-foreground: #252525;
+
+  /* Primary action — terracotta */
+  --primary: #c86b4a;
+  --primary-foreground: #ffffff;
+
+  /* Warm neutral surfaces */
+  --secondary: #f3efe7;
+  --secondary-foreground: #252525;
+  --muted: #f4f1ea;
+  --muted-foreground: #74716c;
+  --accent: #f1ece3;
+  --accent-foreground: #252525;
+
+  /* Status — never colour-only; always paired with a label or icon */
+  --destructive: #b4463b;
+  --destructive-foreground: #ffffff;
+  --success: #35533a;
+  --success-foreground: #ffffff;
+  --warning: #6f5310;
+  --warning-foreground: #ffffff;
+
+  --border: #e8e3da;
+  --input: #e8e3da;
+  --ring: #c86b4a;
+  --glow: rgb(200 107 74 / 22%);
+
+  /* Accent palette. The base tone is a soft surface/fill colour; the matching
+     *-strong tone is the AA-contrast text/border counterpart on ivory or white.
+     Forest green is the deep anchor used for the dark editorial band, footer
+     and logo — never as the site-wide fill. */
+  --terracotta: #c86b4a;
+  --terracotta-strong: #a34d2e;
+  --coral: #e9a18b;
+  --lavender: #dcccf0;
+  --lavender-strong: #57497e;
+  --plum: #59415f;
+  --forest: #183d35;
+  --forest-strong: #0e2a24;
+  --forest-tint: #e4ebe7;
+  --amber: #e7b85c;
+  --amber-strong: #6f5310;
+  --sage: #b9ccb5;
+  --sage-strong: #35533a;
+  --rain: #7896ab;
+  --rain-strong: #3f5f76;
 }
 
 @layer base {
@@ -78,11 +159,20 @@
     border-color: var(--color-border);
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
 
   h1,
@@ -90,21 +180,201 @@
   h3,
   h4 {
     font-family: var(--font-display);
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Visible keyboard focus everywhere, including on non-button elements. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  ::selection {
+    background: rgb(200 107 74 / 18%);
+  }
+
+  /* Anchored landing sections clear the sticky header. */
+  :target {
+    scroll-margin-top: 6rem;
   }
 }
 
-@utility hero-gradient {
-  background: linear-gradient(180deg, oklch(0.2 0.05 258) 0%, var(--color-background) 100%);
+/* ------------------------------------------------------------------ *
+ * Motion
+ * All decorative animation is opt-in via classes so that a failure to
+ * load these rules leaves content fully visible and usable.
+ * ------------------------------------------------------------------ */
+
+@keyframes sc-fall {
+  0% {
+    transform: translateY(-115%);
+    opacity: 0;
+  }
+
+  14% {
+    opacity: 1;
+  }
+
+  86% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(115%);
+    opacity: 0;
+  }
+}
+
+@keyframes sc-drift {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(10px, -3px, 0);
+  }
+}
+
+@keyframes sc-bob {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+}
+
+@keyframes sc-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes sc-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(24 61 53 / 40%);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgb(24 61 53 / 0%);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgb(24 61 53 / 0%);
+  }
+}
+
+.sc-rain-drop {
+  animation: sc-fall 2.4s linear infinite;
+}
+
+.sc-drift {
+  animation: sc-drift 9s ease-in-out infinite;
+}
+
+.sc-bob {
+  animation: sc-bob 7s ease-in-out infinite;
+}
+
+.sc-pulse-ring {
+  animation: sc-pulse-ring 2.6s ease-out infinite;
+}
+
+/* Progressive chart line — draws once when the element reports [data-drawn]. */
+.sc-draw-path {
+  stroke-dasharray: var(--sc-path-length, 640);
+  stroke-dashoffset: var(--sc-path-length, 640);
+}
+
+.sc-draw-path[data-drawn="true"] {
+  animation: sc-draw 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Anything that only reaches its resting state at the end of an animation
+     must be pinned there instead. */
+  .sc-draw-path {
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Surfaces
+ * ------------------------------------------------------------------ */
+
+/* Warm layered wash for the landing hero — light, never a hard gradient. */
+@utility hero-wash {
+  background-image:
+    radial-gradient(58rem 38rem at 6% -14%, rgb(200 107 74 / 12%), transparent 62%),
+    radial-gradient(44rem 30rem at 94% 0%, rgb(185 204 181 / 46%), transparent 64%),
+    radial-gradient(40rem 28rem at 50% 114%, rgb(220 204 240 / 40%), transparent 62%);
+}
+
+/* Deep forest band for the oversized editorial statement and final CTA. */
+@utility forest-band {
+  background-color: var(--forest);
+  background-image:
+    radial-gradient(32rem 22rem at 12% 0%, rgb(200 107 74 / 26%), transparent 64%),
+    radial-gradient(30rem 20rem at 90% 108%, rgb(185 204 181 / 20%), transparent 62%);
 }
 
 @utility card-glow {
-  box-shadow: 0 0 0 1px var(--color-border), 0 20px 60px -30px var(--glow);
+  box-shadow:
+    0 0 0 1px var(--color-border),
+    0 24px 48px -24px rgb(37 37 37 / 18%),
+    0 0 24px -8px var(--glow);
+}
+
+/* Warm, shallow elevation — replaces the heavy dark-theme shadows. */
+@utility shadow-soft {
+  box-shadow:
+    0 1px 2px rgb(37 37 37 / 4%),
+    0 18px 40px -28px rgb(37 37 37 / 24%);
+}
+
+@utility shadow-lift {
+  box-shadow:
+    0 2px 4px rgb(37 37 37 / 5%),
+    0 28px 56px -28px rgb(37 37 37 / 30%);
 }
 
 @utility text-gradient-sky {
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  background: linear-gradient(120deg, var(--terracotta-strong), var(--forest));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Fine hairline grid used behind the trust/mechanism sections. */
+@utility hairline-grid {
+  background-image:
+    linear-gradient(to right, rgb(37 37 37 / 5%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(37 37 37 / 5%) 1px, transparent 1px);
+  background-size: 68px 68px;
 }

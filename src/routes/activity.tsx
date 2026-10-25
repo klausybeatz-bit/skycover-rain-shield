@@ -80,9 +80,9 @@ function ActivityPage() {
           {demo.events.map((e) => {
             const meta = EVENT_META[e.type];
             return (
-              <Card key={e.id} className="border-border/60">
+              <Card key={e.id} className="border-border">
                 <CardContent className="flex flex-wrap items-center gap-3 py-3 text-sm">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-primary">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-plum">
                     <meta.icon className="size-4" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -96,12 +96,12 @@ function ActivityPage() {
                       href={explorerTxUrl(e.txHash)}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-mono text-xs text-primary underline underline-offset-4"
+                      className="font-mono text-xs text-terracotta-strong underline underline-offset-4"
                     >
                       {e.txHash.slice(0, 10)}… ↗
                     </a>
                   ) : (
-                    <Badge variant="outline" className="border-warning/40 text-warning">
+                    <Badge variant="outline" className="border-amber/40 bg-amber/10 text-amber-strong">
                       Simulated · no tx
                     </Badge>
                   )}

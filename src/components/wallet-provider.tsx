@@ -36,6 +36,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [balanceEth, setBalanceEth] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Computed on the client only: window.ethereum does not exist during SSR.
+  const [metaMaskAvailable, setMetaMaskAvailable] = useState(false);
+
+  useEffect(() => {
+    setMetaMaskAvailable(hasMetaMask());
+  }, []);
 
   const refreshBalance = useCallback(async () => {
     if (!address) return;
@@ -91,26 +97,66 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setError(null);
   }, []);
 
+  const onAccounts = useCallback(
+    (...args: unknown[]) => {
+      const accounts = args[0] as string[] | undefined;
+      const newAddress = accounts?.[0];
+      if (!newAddress) {
+        disconnect();
+      } else {
+        const addr = String(newAddress);
+        setAddress(addr);
+        getWalletBalance(addr)
+          .then(setBalanceEth)
+          .catch(() => setBalanceEth(null));
+      }
+    },
+    [disconnect],
+  );
+
+  const onChain = useCallback(
+    (...args: unknown[]) => {
+      const newChainId = Number.parseInt(String(args[0]), 16);
+      setChainId(newChainId);
+      refreshBalance();
+    },
+    [refreshBalance],
+  );
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const eth = (window as unknown as { ethereum?: Eip1193WithEvents }).ethereum;
     if (!eth?.on) return;
-    const onAccounts = (...args: unknown[]) => {
-      const accounts = args[0];
-      if (!Array.isArray(accounts) || accounts.length === 0) {
-        disconnect();
-      } else {
-        setAddress(String(accounts[0]));
+
+    const checkConnection = async () => {
+      try {
+        const cid = await getChainId();
+        setChainId(cid);
+
+        const ethAny = eth as any;
+        if (ethAny.request) {
+          const accounts = (await ethAny.request({ method: "eth_accounts" })) as string[];
+          const addr = accounts?.[0];
+          if (addr) {
+            setAddress(addr);
+            const bal = await getWalletBalance(addr);
+            setBalanceEth(bal);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check initial connection:", err);
       }
     };
-    const onChain = (...args: unknown[]) => setChainId(Number.parseInt(String(args[0]), 16));
+
+    checkConnection();
+
     eth.on("accountsChanged", onAccounts);
     eth.on("chainChanged", onChain);
     return () => {
       eth.removeListener("accountsChanged", onAccounts);
       eth.removeListener("chainChanged", onChain);
     };
-  }, [disconnect]);
+  }, [onAccounts, onChain]);
 
   const value: WalletState = {
     address,
@@ -118,7 +164,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     balanceEth,
     connecting,
     error,
-    hasMetaMask: hasMetaMask(),
+    hasMetaMask: metaMaskAvailable,
     onSepolia: chainId !== null && isSepolia(chainId),
     connect,
     switchNetwork,
@@ -135,4 +181,6 @@ export function useWallet(): WalletState {
   return ctx;
 }
 
-export { shortenAddress };
+// shortenAddress should be imported from @/lib/wallet instead of re-exported here
+// to avoid confusion and potential circular dependencies.
+export { shortenAddress } from "@/lib/wallet";

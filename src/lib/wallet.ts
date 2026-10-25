@@ -13,24 +13,44 @@ interface Eip1193 {
 
 function getEthereum(): Eip1193 | null {
   if (typeof window === "undefined") return null;
-  const eth = (window as unknown as { ethereum?: Eip1193 }).ethereum;
-  return eth ?? null;
+  const eth = (window as any).ethereum;
+  if (!eth) return null;
+  
+  // Some wallets might inject multiple providers, detect the one that is MetaMask
+  if (eth.providers && Array.isArray(eth.providers)) {
+    return eth.providers.find((p: any) => p.isMetaMask) || eth.providers[0] || null;
+  }
+  
+  return eth;
 }
 
 export function hasMetaMask(): boolean {
-  return getEthereum() !== null;
+  const eth = getEthereum();
+  return !!eth && (eth as any).isMetaMask;
 }
 
 export async function connectWallet(): Promise<{ address: string; chainId: number }> {
   const eth = getEthereum();
-  if (!eth) throw new Error("MetaMask not detected. Install the MetaMask browser extension to connect.");
+  if (!eth) {
+    throw new Error("No Ethereum provider detected. Please install MetaMask.");
+  }
 
-  const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-  const [first] = accounts ?? [];
-  if (!first) throw new Error("No accounts returned by MetaMask.");
+  try {
+    const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
+    const [first] = accounts ?? [];
+    if (!first) throw new Error("No accounts found. Please unlock your wallet.");
 
-  const chainId = await getChainId();
-  return { address: first, chainId };
+    const chainId = await getChainId();
+    return { address: first, chainId };
+  } catch (err: any) {
+    if (err.code === 4001) {
+      throw new Error("Connection request was rejected by the user.");
+    }
+    if (err.code === -32002) {
+      throw new Error("Connection request is already pending in MetaMask. Please open the extension.");
+    }
+    throw err;
+  }
 }
 
 export async function getChainId(): Promise<number> {

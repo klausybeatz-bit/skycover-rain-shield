@@ -114,7 +114,7 @@ function DemoPage() {
         {steps.map((s) => (
           <div
             key={s.n}
-            className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2 text-sm"
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm"
           >
             {s.done ? (
               <CheckCircle2 className="size-4 shrink-0 text-success" />
@@ -149,11 +149,10 @@ function DemoPage() {
                     <button
                       key={p.id}
                       onClick={() => setPolicyId(p.id)}
-                      className={`rounded-md border px-2.5 py-1.5 font-mono text-xs transition-colors ${
-                        selected?.id === p.id
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:text-foreground"
-                      }`}
+                      className={`rounded-md border px-2.5 py-1.5 font-mono text-xs transition-colors ${selected?.id === p.id
+                        ? "border-terracotta bg-terracotta/12 text-terracotta-strong"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                        }`}
                     >
                       {p.id} · {p.status.replace("_", " ")}
                     </button>
@@ -174,7 +173,7 @@ function DemoPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <CloudRain className="size-5 text-accent" /> Step 2 — Simulate rainfall
+              <CloudRain className="size-5 text-rain" /> Step 2 — Simulate rainfall
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -186,12 +185,12 @@ function DemoPage() {
                 Normal rainfall (160%)
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               Applies a synthetic rainfall total to the selected policy and sets its eligibility.{" "}
               <SimulatedBadge />
-            </p>
+            </div>
             {selected?.rainfall && (
-              <div className="rounded-lg border border-border/60 bg-secondary/40 px-3 py-2 text-xs">
+              <div className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-xs">
                 Recorded: <span className="font-mono">{selected.rainfall.totalMm} mm</span> vs threshold{" "}
                 {selected.thresholdMm} mm → <PolicyStatusBadge status={selected.status} />
               </div>
