@@ -18,8 +18,8 @@
  * -------
  * Orders live in a module-level Map. That is honest for a prototype and for a
  * single server process, but it is NOT durable: a restart clears pending
- * orders, and multi-instance or serverless deployments (the Nitro build targets
- * a Cloudflare Worker) do not share the Map between isolates. Production must
+ * orders, and multi-instance or serverless deployments (this app deploys to a
+ * Cloudflare Worker) do not share the Map between isolates. Production must
  * swap this for a durable store — see README "UPI payments".
  */
 

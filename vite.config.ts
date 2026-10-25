@@ -1,14 +1,40 @@
-import { defineConfig, type PluginOption } from "vite";
+import { defineConfig } from "vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
-import tsConfigPaths from "vite-tsconfig-paths";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
-import { nitro } from "nitro/vite";
 
-export default defineConfig(({ command }) => {
-  const plugins: PluginOption[] = [
+export default defineConfig({
+  css: { transformer: "lightningcss" },
+  resolve: {
+    // Vite 8 resolves tsconfig "paths" ("@/*") natively.
+    tsconfigPaths: true,
+    alias: { "@": `${process.cwd()}/src` },
+    dedupe: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "@tanstack/react-query",
+      "@tanstack/query-core",
+    ],
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+    ],
+    ignoreOutdatedRequests: true,
+  },
+  server: { host: "::", port: 8080 },
+  plugins: [
+    // Cloudflare Workers adapter. Must be listed before TanStack Start so the
+    // "ssr" environment is treated as the Worker environment.
+    cloudflare({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),
-    tsConfigPaths({ projects: ["./tsconfig.json"] }),
     tanstackStart({
       importProtection: {
         behavior: "error",
@@ -17,42 +43,7 @@ export default defineConfig(({ command }) => {
           specifiers: ["server-only"],
         },
       },
-      // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-      server: { entry: "server" },
     }),
-  ];
-
-  // Nitro only takes part in production builds; `npm run dev` uses the Vite dev server.
-  if (command === "build") {
-    plugins.push(nitro({ defaultPreset: "cloudflare-module" }));
-  }
-
-  plugins.push(viteReact());
-
-  return {
-    css: { transformer: "lightningcss" },
-    resolve: {
-      alias: { "@": `${process.cwd()}/src` },
-      dedupe: [
-        "react",
-        "react-dom",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "@tanstack/react-query",
-        "@tanstack/query-core",
-      ],
-    },
-    optimizeDeps: {
-      include: [
-        "react",
-        "react-dom",
-        "react-dom/client",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-      ],
-      ignoreOutdatedRequests: true,
-    },
-    server: { host: "::", port: 8080 },
-    plugins,
-  };
+    viteReact(),
+  ],
 });

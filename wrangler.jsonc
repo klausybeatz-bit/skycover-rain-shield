@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skycover-rain-shield",
+  "compatibility_date": "2026-10-25",
+  "compatibility_flags": ["nodejs_compat"],
+  // src/server.ts is SkyCover's custom Worker entrypoint: it wraps the TanStack
+  // Start server entry to normalise h3-swallowed SSR errors into an HTML page.
+  "main": "src/server.ts",
+  "upload_source_maps": true,
+  "observability": {
+    "enabled": true
+  }
+}

@@ -86,8 +86,8 @@ happened:
 
 - **The order book is in memory.** Orders live in a module-level `Map`. That is
   honest for a single-process prototype, but it is not durable: a restart clears
-  pending orders, and multi-instance or serverless deployments (the Nitro build
-  targets a Cloudflare Worker) do not share it between isolates. A production
+  pending orders, and multi-instance or serverless deployments (this app deploys
+  to a Cloudflare Worker) do not share it between isolates. A production
   deployment must replace it with a durable store (for example Postgres or
   Redis) and make `markOrderPaid` a single transaction.
 - **Payouts are not bank transfers.** Eligible payouts are shown, and claiming
