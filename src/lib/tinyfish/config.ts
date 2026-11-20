@@ -54,3 +54,36 @@ export function getTinyFishConfig(): TinyFishConfig {
     ),
   };
 }
+
+/** The shape of a credential — never its value, so it is safe to log. */
+export interface ApiKeyDiagnostics {
+  present: boolean;
+  /** Character count only. */
+  length: number;
+  /**
+   * True when the value carries a character an HTTP header may not contain
+   * (a control character such as a newline left behind by a paste). The
+   * runtime rejects such a request before sending it, which looks identical to
+   * a network failure unless the shape is recorded.
+   */
+  unsafeHeaderChars: boolean;
+}
+
+/** Character-scan equivalent of a control-character test, without a regex. */
+function hasUnsafeHeaderChars(value: string): boolean {
+  for (let i = 0; i < value.length; i += 1) {
+    const code = value.charCodeAt(i);
+    if (code < 0x20 || code === 0x7f) return true;
+  }
+  return false;
+}
+
+/** Describe the API key without revealing any part of it. */
+export function describeApiKeyShape(apiKey: string | null): ApiKeyDiagnostics {
+  if (apiKey === null) return { present: false, length: 0, unsafeHeaderChars: false };
+  return {
+    present: true,
+    length: apiKey.length,
+    unsafeHeaderChars: hasUnsafeHeaderChars(apiKey),
+  };
+}

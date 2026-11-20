@@ -70,6 +70,9 @@ beforeEach(() => {
   clearWeatherCache();
   resetRateLimiter();
   delete process.env["TINYFISH_API_KEY"];
+  // Several tests exercise upstream failures on purpose; keep their expected
+  // diagnostic output out of the test log.
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -81,7 +84,9 @@ afterEach(() => {
 
 describe("observed vs forecast separation", () => {
   it("splits the series on the observation boundary and totals only observed days", async () => {
-    const { fetchImpl } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
     const snapshot = await getWeatherSnapshot(
       { location: LOCATION, startDate: "2026-11-19", endDate: "2026-11-20", crossCheck: false },
@@ -101,7 +106,9 @@ describe("observed vs forecast separation", () => {
   });
 
   it("reports the current hour and today's total from the local calendar day", async () => {
-    const { fetchImpl } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
     const snapshot = await getWeatherSnapshot(
       { location: LOCATION, crossCheck: false },
@@ -117,7 +124,9 @@ describe("observed vs forecast separation", () => {
   });
 
   it("attributes every reading to a real source URL", async () => {
-    const { fetchImpl } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
     const snapshot = await getWeatherSnapshot(
       { location: LOCATION, crossCheck: false },
@@ -134,7 +143,11 @@ describe("missing and invalid data", () => {
   it("leaves an unmeasured day absent instead of reporting it as zero", async () => {
     const { fetchImpl } = makeFetch({
       "api.open-meteo.com/v1/forecast": () =>
-        json(forecastPayload({ daily: { time: ["2026-11-19", "2026-11-20", "2026-11-21"], rain_sum: [null, 12.5, 3] } })),
+        json(
+          forecastPayload({
+            daily: { time: ["2026-11-19", "2026-11-20", "2026-11-21"], rain_sum: [null, 12.5, 3] },
+          }),
+        ),
     });
 
     const snapshot = await getWeatherSnapshot(
@@ -151,7 +164,12 @@ describe("missing and invalid data", () => {
   it("treats an unreadable unit as uncertain rather than assuming millimetres", async () => {
     const { fetchImpl } = makeFetch({
       "api.open-meteo.com/v1/forecast": () =>
-        json(forecastPayload({ hourly_units: { rain: "furlongs" }, daily_units: { rain_sum: "furlongs" } })),
+        json(
+          forecastPayload({
+            hourly_units: { rain: "furlongs" },
+            daily_units: { rain_sum: "furlongs" },
+          }),
+        ),
     });
 
     const snapshot = await getWeatherSnapshot(
@@ -164,7 +182,9 @@ describe("missing and invalid data", () => {
   });
 
   it("flags a stale observation but still reports it", async () => {
-    const { fetchImpl } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
     // A day later, the newest reading is 24 h old.
     const laterMs = Date.parse("2026-11-21T12:00:00Z");
 
@@ -182,14 +202,19 @@ describe("missing and invalid data", () => {
     const fetchImpl = (async () => new Response("down", { status: 502 })) as typeof fetch;
 
     await expect(
-      getWeatherSnapshot({ location: LOCATION, crossCheck: false }, { fetchImpl, now: () => NOW_MS }),
+      getWeatherSnapshot(
+        { location: LOCATION, crossCheck: false },
+        { fetchImpl, now: () => NOW_MS },
+      ),
     ).rejects.toThrow(/Open-Meteo forecast/);
   });
 });
 
 describe("TinyFish IMD cross-check", () => {
   it("is skipped, without failing, when no API key is configured", async () => {
-    const { fetchImpl } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
     const snapshot = await getWeatherSnapshot(
       { location: LOCATION, startDate: "2026-11-19", endDate: "2026-11-20" },
@@ -205,7 +230,20 @@ describe("TinyFish IMD cross-check", () => {
     const { fetchImpl, calls } = makeFetch({
       "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
       "api.search.tinyfish.ai": () =>
-        json({ query: "q", total_results: 1, page: 0, results: [{ position: 1, site_name: "imd.gov.in", title: "IMD", snippet: "", url: IMDS_SEARCH_URL }] }),
+        json({
+          query: "q",
+          total_results: 1,
+          page: 0,
+          results: [
+            {
+              position: 1,
+              site_name: "imd.gov.in",
+              title: "IMD",
+              snippet: "",
+              url: IMDS_SEARCH_URL,
+            },
+          ],
+        }),
       "api.fetch.tinyfish.ai": () => json(IMD_PAGE),
     });
 
@@ -225,10 +263,25 @@ describe("TinyFish IMD cross-check", () => {
     const { fetchImpl } = makeFetch({
       "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
       "api.search.tinyfish.ai": () =>
-        json({ query: "q", total_results: 1, page: 0, results: [{ position: 1, site_name: "imd.gov.in", title: "IMD", snippet: "", url: IMDS_SEARCH_URL }] }),
+        json({
+          query: "q",
+          total_results: 1,
+          page: 0,
+          results: [
+            {
+              position: 1,
+              site_name: "imd.gov.in",
+              title: "IMD",
+              snippet: "",
+              url: IMDS_SEARCH_URL,
+            },
+          ],
+        }),
       "api.fetch.tinyfish.ai": () =>
         json({
-          results: [{ ...IMD_PAGE.results[0]!, text: "Very heavy rainfall of 180 mm was recorded." }],
+          results: [
+            { ...IMD_PAGE.results[0]!, text: "Very heavy rainfall of 180 mm was recorded." },
+          ],
           errors: [],
         }),
     });
@@ -262,7 +315,9 @@ describe("TinyFish IMD cross-check", () => {
 
 describe("caching", () => {
   it("reuses a recent reading instead of paying for another request", async () => {
-    const { fetchImpl, calls } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl, calls } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
     const first = await getWeatherSnapshot(
       { location: LOCATION, startDate: "2026-11-19", endDate: "2026-11-20", crossCheck: false },
@@ -279,10 +334,18 @@ describe("caching", () => {
   });
 
   it("re-fetches when a refresh is requested", async () => {
-    const { fetchImpl, calls } = makeFetch({ "api.open-meteo.com/v1/forecast": () => json(forecastPayload()) });
+    const { fetchImpl, calls } = makeFetch({
+      "api.open-meteo.com/v1/forecast": () => json(forecastPayload()),
+    });
 
-    await getWeatherSnapshot({ location: LOCATION, crossCheck: false }, { fetchImpl, now: () => NOW_MS });
-    await getWeatherSnapshot({ location: LOCATION, crossCheck: false }, { fetchImpl, now: () => NOW_MS, refresh: true });
+    await getWeatherSnapshot(
+      { location: LOCATION, crossCheck: false },
+      { fetchImpl, now: () => NOW_MS },
+    );
+    await getWeatherSnapshot(
+      { location: LOCATION, crossCheck: false },
+      { fetchImpl, now: () => NOW_MS, refresh: true },
+    );
 
     expect(calls).toHaveLength(2);
   });

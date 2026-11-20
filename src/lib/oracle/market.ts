@@ -19,7 +19,13 @@ import { tinyFetch, tinySearch, type TinyFishCallOptions } from "../tinyfish/cli
 import { describeTinyFishFailure, TinyFishError } from "../tinyfish/types";
 import { aliasesFor } from "./crops";
 import type { DataSource, MandiPrice, MandiPrices } from "./types";
-import { parseNumericCell, parsePriceUnit, roundTo, toInrPerQuintal, type PriceUnit } from "./units";
+import {
+  parseNumericCell,
+  parsePriceUnit,
+  roundTo,
+  toInrPerQuintal,
+  type PriceUnit,
+} from "./units";
 
 // ---------------------------------------------------------------------------
 // Cache
@@ -104,12 +110,16 @@ interface ColumnMap {
   date?: number;
 }
 
-const DATE_LIKE = /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|[A-Za-z]{3,9}\s+\d{1,2},?\s*\d{4}/;
+const DATE_LIKE =
+  /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|[A-Za-z]{3,9}\s+\d{1,2},?\s*\d{4}/;
 
 function splitRow(line: string): string[] {
   const trimmed = line.trim();
   if (!trimmed.includes("|")) {
-    return trimmed.split(/\t+|\s{2,}/).map((cell) => cell.trim()).filter(Boolean);
+    return trimmed
+      .split(/\t+|\s{2,}/)
+      .map((cell) => cell.trim())
+      .filter(Boolean);
   }
   return trimmed
     .replace(/^\|/, "")
@@ -133,7 +143,8 @@ function findHeader(lines: ReadonlyArray<string>): { index: number; map: ColumnM
       if (map.commodity === undefined && /commodity|crop|item/.test(cell)) map.commodity = index;
       else if (map.state === undefined && /state/.test(cell)) map.state = index;
       else if (map.district === undefined && /district/.test(cell)) map.district = index;
-      else if (map.market === undefined && /market|mandi|centre|center/.test(cell)) map.market = index;
+      else if (map.market === undefined && /market|mandi|centre|center/.test(cell))
+        map.market = index;
       else if (map.min === undefined && /\bmin/.test(cell)) map.min = index;
       else if (map.max === undefined && /\bmax/.test(cell)) map.max = index;
       else if (map.modal === undefined && /modal/.test(cell)) map.modal = index;
@@ -167,7 +178,20 @@ function normaliseDate(raw: string | undefined): string | null {
 
   const worded = text.match(/(\d{1,2})\s+([A-Za-z]{3,9})\s+(\d{4})/);
   if (worded) {
-    const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const months = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
     const month = months.indexOf(worded[2]!.slice(0, 3).toLowerCase()) + 1;
     if (month > 0) {
       return `${worded[3]}-${String(month).padStart(2, "0")}-${String(Number.parseInt(worded[1]!, 10)).padStart(2, "0")}`;
@@ -178,7 +202,9 @@ function normaliseDate(raw: string | undefined): string | null {
 
 /** Find an explicit unit statement anywhere on the page. */
 function detectUnitText(text: string): string | null {
-  const match = text.match(/per\s*(quintal|qtl|tonne|metric\s*ton|mt|kg|kilogram)|\b(quintal|qtl|tonne|mt)\b/i);
+  const match = text.match(
+    /per\s*(quintal|qtl|tonne|metric\s*ton|mt|kg|kilogram)|\b(quintal|qtl|tonne|mt)\b/i,
+  );
   return match ? match[0] : null;
 }
 
@@ -188,10 +214,18 @@ interface RowContext {
   unit: PriceUnit;
 }
 
-function buildPrice(cells: ReadonlyArray<string>, map: ColumnMap | undefined, context: RowContext): MandiPrice | null {
-  const pick = (index?: number): string | undefined => (index === undefined ? undefined : cells[index]);
+function buildPrice(
+  cells: ReadonlyArray<string>,
+  map: ColumnMap | undefined,
+  context: RowContext,
+): MandiPrice | null {
+  const pick = (index?: number): string | undefined =>
+    index === undefined ? undefined : cells[index];
 
-  const commodity = (map?.commodity !== undefined ? pick(map.commodity) : cells.find((cell) => matchesCrop(cell, context.query.crop))) ?? "";
+  const commodity =
+    (map?.commodity !== undefined
+      ? pick(map.commodity)
+      : cells.find((cell) => matchesCrop(cell, context.query.crop))) ?? "";
 
   let minRaw: string | undefined;
   let maxRaw: string | undefined;
@@ -205,7 +239,10 @@ function buildPrice(cells: ReadonlyArray<string>, map: ColumnMap | undefined, co
     // No usable header: fall back to positional numbers, AGMARKNET order
     // (min, max, modal). Dates and the commodity cell are excluded first.
     const numbers = cells.filter(
-      (cell) => !DATE_LIKE.test(cell) && !matchesCrop(cell, context.query.crop) && parseNumericCell(cell) !== null,
+      (cell) =>
+        !DATE_LIKE.test(cell) &&
+        !matchesCrop(cell, context.query.crop) &&
+        parseNumericCell(cell) !== null,
     );
     [minRaw, maxRaw, modalRaw] = numbers;
   }
@@ -222,22 +259,38 @@ function buildPrice(cells: ReadonlyArray<string>, map: ColumnMap | undefined, co
 
   // A row with no usable price at all is not a price row.
   if (minInr === null && maxInr === null && modalInr === null) return null;
+  // A minimum above the maximum is impossible, so at least one of the two is not
+  // a price. Which one is unknowable, and picking either would invent a figure.
+  if (minInr !== null && maxInr !== null && minInr > maxInr) return null;
   // A modal price is the headline; derive it from the bounds only if it is
   // missing, and only when both bounds are present (never invented from one).
-  const modal = modalInr ?? (minInr !== null && maxInr !== null ? roundTo((minInr + maxInr) / 2, 2) : null);
+  const modal =
+    modalInr ?? (minInr !== null && maxInr !== null ? roundTo((minInr + maxInr) / 2, 2) : null);
 
-  const dateCell = map?.date !== undefined ? pick(map.date) : cells.find((cell) => DATE_LIKE.test(cell));
+  const dateCell =
+    map?.date !== undefined ? pick(map.date) : cells.find((cell) => DATE_LIKE.test(cell));
+  const priceDate = normaliseDate(typeof dateCell === "string" ? dateCell : undefined);
+
+  // Only what the row itself states counts as identification. The caller's query
+  // says what was asked for, not what this row describes, so it is not evidence.
+  const rowState = map?.state !== undefined ? pick(map.state) : null;
+  const rowDistrict = map?.district !== undefined ? pick(map.district) : null;
+  const rowMarket = map?.market !== undefined ? pick(map.market) : null;
+
+  // A number that names no mandi and carries no date cannot be shown as that
+  // mandi's price: attributing it would be a fabrication dressed as a citation.
+  if (!rowState && !rowDistrict && !rowMarket && !priceDate) return null;
 
   return {
     crop: commodity || context.query.crop,
-    state: (map?.state !== undefined ? pick(map.state) : null) || context.query.state || null,
-    district: (map?.district !== undefined ? pick(map.district) : null) || context.query.district || null,
-    market: (map?.market !== undefined ? pick(map.market) : null) || context.query.market || null,
+    state: rowState || context.query.state || null,
+    district: rowDistrict || context.query.district || null,
+    market: rowMarket || context.query.market || null,
     minInr,
     maxInr,
     modalInr: modal,
     unit: "INR/quintal",
-    priceDate: normaliseDate(typeof dateCell === "string" ? dateCell : undefined),
+    priceDate,
     updatedAt: null,
     source: context.source,
   };
@@ -260,8 +313,16 @@ export function parseMandiPage(
   // An official source states prices in INR per quintal; anything else must say
   // so on the page, otherwise the figure cannot be normalised and is dropped.
   const explicit = detectUnitText(context.pageText ?? markdown);
-  const unit = (explicit ? parsePriceUnit(explicit) : null) ?? (isOfficial(context.source.url) ? "quintal" : null);
+  const unit =
+    (explicit ? parsePriceUnit(explicit) : null) ??
+    (isOfficial(context.source.url) ? "quintal" : null);
   if (!unit) return [];
+
+  // Without a recognisable price header, buildPrice reads numbers positionally
+  // in AGMARKNET's column order. That order only means anything on a source
+  // known to publish in it: on an unlabelled third-party page the same rule
+  // reads a "30-day trend" or "100 kg" label as a price.
+  if (!header && !isOfficial(context.source.url)) return [];
 
   const rowContext: RowContext = { query: context.query, source: context.source, unit };
 
@@ -361,7 +422,11 @@ export async function getMandiPrices(
 
     const candidates = rankResults(search.results).slice(0, MAX_FETCH_TARGETS);
     if (candidates.length === 0) {
-      result = emptyResult({ ...query, crop }, "No market data source was found for this crop.", nowMs);
+      result = emptyResult(
+        { ...query, crop },
+        "No market data source was found for this crop.",
+        nowMs,
+      );
     } else {
       const fetched = await tinyFetch(
         {
@@ -401,7 +466,8 @@ export async function getMandiPrices(
       } else {
         const ordered = sortByDateDesc(rows);
         const latest = ordered[0]!;
-        const previous = ordered.find((row) => row.priceDate !== latest.priceDate) ?? ordered[1] ?? null;
+        const previous =
+          ordered.find((row) => row.priceDate !== latest.priceDate) ?? ordered[1] ?? null;
         result = {
           crop,
           state: query.state ?? latest.state,
@@ -420,8 +486,31 @@ export async function getMandiPrices(
     }
   } catch (error) {
     if (error instanceof TinyFishError) {
-      result = emptyResult({ ...query, crop }, describeTinyFishFailure(error), nowMs);
+      const reason = describeTinyFishFailure(error);
+      // The caller still receives a normal unavailable result, so the platform
+      // log would otherwise show a 200 with no hint of the upstream failure.
+      // Record the category and status here; never the key or the request URL.
+      console.error(
+        "[mandi]",
+        JSON.stringify({
+          event: "mandi.lookup.failed",
+          crop,
+          kind: error.kind,
+          status: error.status,
+          reason,
+        }),
+      );
+      result = emptyResult({ ...query, crop }, reason, nowMs);
     } else {
+      console.error(
+        "[mandi]",
+        JSON.stringify({
+          event: "mandi.lookup.failed",
+          crop,
+          kind: "unexpected",
+          errorName: error instanceof Error ? error.name : typeof error,
+        }),
+      );
       result = emptyResult({ ...query, crop }, "Live market data could not be retrieved.", nowMs);
     }
   }

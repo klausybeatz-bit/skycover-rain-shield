@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 
 import { resetRateLimiter, tinyFetch, tinySearch } from "./client";
 import { TinyFishError } from "./types";
@@ -10,7 +10,11 @@ import { TinyFishError } from "./types";
  * The values below are made-up placeholders.
  */
 
-const ENV_KEYS = ["TINYFISH_API_KEY", "TINYFISH_RATE_LIMIT_PER_MINUTE", "TINYFISH_RATE_LIMIT"] as const;
+const ENV_KEYS = [
+  "TINYFISH_API_KEY",
+  "TINYFISH_RATE_LIMIT_PER_MINUTE",
+  "TINYFISH_RATE_LIMIT",
+] as const;
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -34,9 +38,13 @@ function searchBody(count = 1) {
   };
 }
 
+/** Captures the client's diagnostic output so tests can assert it is safe. */
+let consoleError: MockInstance;
+
 beforeEach(() => {
   for (const key of ENV_KEYS) delete process.env[key];
   resetRateLimiter();
+  consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -179,7 +187,9 @@ describe("response validation", () => {
 
   it("rejects a non-JSON body from a successful response", async () => {
     process.env["TINYFISH_API_KEY"] = "sk-tinyfish-test-value";
-    const fetchImpl = vi.fn<typeof fetch>(async () => new Response("<html>oops</html>", { status: 200 }));
+    const fetchImpl = vi.fn<typeof fetch>(
+      async () => new Response("<html>oops</html>", { status: 200 }),
+    );
 
     await expect(tinySearch({ query: "x" }, { fetchImpl, attempts: 1 })).rejects.toMatchObject({
       kind: "invalid_response",
@@ -207,5 +217,85 @@ describe("response validation", () => {
 
     const body = JSON.parse(String(fetchImpl.mock.calls[0]![1]?.body)) as { urls: string[] };
     expect(body.urls).toHaveLength(10);
+  });
+});
+
+describe("diagnostic logging", () => {
+  const logText = () => consoleError.mock.calls.flat().join(" ");
+  const lastRecord = () =>
+    JSON.parse(String(consoleError.mock.calls[0]![1])) as Record<string, unknown>;
+
+  it("records the category, status and attempt count of an upstream failure", async () => {
+    process.env["TINYFISH_API_KEY"] = "sk-tinyfish-test-value";
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse({ error: "boom" }, 503));
+
+    await expect(tinySearch({ query: "x" }, { fetchImpl, attempts: 1 })).rejects.toMatchObject({
+      kind: "upstream",
+    });
+
+    const record = lastRecord();
+    expect(record["event"]).toBe("tinyfish.request.failed");
+    expect(record["host"]).toBe("api.search.tinyfish.ai");
+    expect(record["kind"]).toBe("upstream");
+    expect(record["status"]).toBe(503);
+    expect(record["attempts"]).toBe(1);
+  });
+
+  it("records a network rejection without leaking the API key", async () => {
+    process.env["TINYFISH_API_KEY"] = "sk-tinyfish-test-value";
+    const fetchImpl = vi.fn<typeof fetch>(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+
+    await expect(tinySearch({ query: "x" }, { fetchImpl, attempts: 1 })).rejects.toMatchObject({
+      kind: "network",
+    });
+
+    expect(logText()).toContain("network");
+    expect(logText()).toContain("TypeError");
+    expect(logText()).not.toContain("sk-tinyfish-test-value");
+  });
+
+  it("records an unconfigured server and never calls out", async () => {
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    await expect(tinySearch({ query: "x" }, { fetchImpl })).rejects.toMatchObject({
+      kind: "unconfigured",
+    });
+
+    const record = lastRecord() as { key: { present: boolean } };
+    expect(record.key.present).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("flags a credential holding a header-breaking character, without logging it", async () => {
+    // A newline wrapped into the value by a paste survives readEnv's trim and
+    // makes the runtime reject the request — the case this diagnostic exists for.
+    const malformed = "sk-live\nsecret-half";
+    process.env["TINYFISH_API_KEY"] = malformed;
+    const fetchImpl = vi.fn<typeof fetch>(async () => {
+      throw new TypeError("Failed to fetch");
+    });
+
+    await expect(tinySearch({ query: "x" }, { fetchImpl, attempts: 1 })).rejects.toMatchObject({
+      kind: "network",
+    });
+
+    const record = lastRecord() as {
+      key: { present: boolean; length: number; unsafeHeaderChars: boolean };
+    };
+    expect(record.key.present).toBe(true);
+    expect(record.key.unsafeHeaderChars).toBe(true);
+    expect(record.key.length).toBe(malformed.length);
+    expect(logText()).not.toContain("secret-half");
+  });
+
+  it("stays silent on a successful call", async () => {
+    process.env["TINYFISH_API_KEY"] = "sk-tinyfish-test-value";
+    const fetchImpl = vi.fn<typeof fetch>(async () => jsonResponse(searchBody()));
+
+    await tinySearch({ query: "x" }, { fetchImpl });
+
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });
