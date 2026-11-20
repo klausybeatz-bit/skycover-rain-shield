@@ -1,6 +1,9 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "skycover-rain-shield",
+  // The existing public Worker. Its URL is
+  // https://skycover.kaustavhaldar6.workers.dev — deploying under any other
+  // name would publish a second hostname instead of updating this one.
+  "name": "skycover",
   "compatibility_date": "2026-10-25",
   "compatibility_flags": ["nodejs_compat"],
   // src/server.ts is SkyCover's custom Worker entrypoint: it wraps the TanStack

@@ -51,9 +51,21 @@ export async function handleUpiWebhook(request: Request): Promise<Response> {
   }
 
   const config = getUpiServerConfig();
-  if (config.mode !== "live" || !config.webhookSecret) {
-    // Without a webhook secret there is nothing that could make this request
-    // trustworthy, so it is refused rather than guessed at.
+  if (!config.webhookSecret) {
+    // Without a signing secret there is nothing that could make this request
+    // trustworthy, so it is refused rather than guessed at. Checkout is
+    // unaffected: that path proves the payment with the key secret and a
+    // Payments API read, and does not depend on this endpoint.
+    return json(
+      {
+        error:
+          "No webhook signing secret is configured on this server, so deliveries cannot be verified.",
+        missing: ["RAZORPAY_WEBHOOK_SECRET"],
+      },
+      503,
+    );
+  }
+  if (config.mode !== "live") {
     return json(
       {
         error: "Live UPI payments are not configured on this server, so webhooks cannot be verified.",

@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { getPublicUpiConfig, getUpiServerConfig, liveModeMissing } from "./server-config";
 
 /**
- * Configuration behaviour, and the guarantee that matters most here: the public
- * (browser-facing) view must never carry a secret value, and missing credentials
+ * Configuration behaviour, and the two guarantees that matter here: the public
+ * (browser-facing) view must never carry a secret value, and a missing key pair
  * must switch the app into a clearly labelled simulated mode instead of
  * pretending a live payment could succeed.
  *
@@ -30,12 +30,11 @@ function setEnv(values: Record<string, string>) {
   for (const [key, value] of Object.entries(values)) process.env[key] = value;
 }
 
-/** All three variables a live configuration needs, with a test key id. */
+/** The key pair alone — everything live checkout needs, and nothing more. */
 function setLiveEnv(overrides: Record<string, string> = {}) {
   setEnv({
     RAZORPAY_KEY_ID: "rzp_test_keyid",
     RAZORPAY_KEY_SECRET: TEST_SECRET,
-    RAZORPAY_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET,
     ...overrides,
   });
 }
@@ -49,27 +48,14 @@ describe("UPI server configuration", () => {
 
     expect(config.mode).toBe("simulated");
     expect(config.provider).toBe("none");
-    expect(config.missing).toEqual([
-      "RAZORPAY_KEY_ID",
-      "RAZORPAY_KEY_SECRET",
-      "RAZORPAY_WEBHOOK_SECRET",
-    ]);
+    expect(config.missing).toEqual(["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"]);
     // Even on the server object, the secrets are null rather than empty strings,
     // so a caller cannot accidentally serialise a "configured" value.
     expect(config.keySecret).toBeNull();
     expect(config.webhookSecret).toBeNull();
   });
 
-  it("refuses live mode when the webhook secret alone is missing", () => {
-    clearEnv();
-    setEnv({ RAZORPAY_KEY_ID: "rzp_test_keyid", RAZORPAY_KEY_SECRET: TEST_SECRET });
-
-    const config = getUpiServerConfig();
-    expect(config.mode).toBe("simulated");
-    expect(liveModeMissing(config)).toEqual(["RAZORPAY_WEBHOOK_SECRET"]);
-  });
-
-  it("enables live mode only when all three variables are present", () => {
+  it("enables live checkout from the key pair alone", () => {
     clearEnv();
     setLiveEnv();
 
@@ -79,9 +65,38 @@ describe("UPI server configuration", () => {
     expect(config.missing).toEqual([]);
   });
 
+  it("keeps checkout disabled when the key secret is missing", () => {
+    clearEnv();
+    setEnv({ RAZORPAY_KEY_ID: "rzp_test_keyid" });
+
+    const config = getUpiServerConfig();
+    expect(config.mode).toBe("simulated");
+    expect(liveModeMissing(config)).toEqual(["RAZORPAY_KEY_SECRET"]);
+  });
+
+  it("reports an unset webhook secret without taking checkout down", () => {
+    clearEnv();
+    setLiveEnv();
+
+    const config = getUpiServerConfig();
+    expect(config.webhookSecret).toBeNull();
+    // The webhook is a reconciliation channel, not the authenticity gate: a
+    // signed checkout callback plus a Payments API read already proves the
+    // payment on their own.
+    expect(config.mode).toBe("live");
+    expect(liveModeMissing(config)).toEqual([]);
+  });
+
+  it("picks up the webhook secret when it is configured", () => {
+    clearEnv();
+    setLiveEnv({ RAZORPAY_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET });
+
+    expect(getUpiServerConfig().webhookSecret).toBe(TEST_WEBHOOK_SECRET);
+  });
+
   it("honours a deliberate demo override even with credentials present", () => {
     clearEnv();
-    setLiveEnv({ UPI_DEMO_MODE: "true" });
+    setLiveEnv({ RAZORPAY_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET, UPI_DEMO_MODE: "true" });
 
     const config = getUpiServerConfig();
     expect(config.mode).toBe("simulated");
@@ -101,7 +116,7 @@ describe("UPI server configuration", () => {
 describe("public UPI configuration", () => {
   it("exposes no secret value when live credentials are configured", () => {
     clearEnv();
-    setLiveEnv();
+    setLiveEnv({ RAZORPAY_WEBHOOK_SECRET: TEST_WEBHOOK_SECRET });
 
     const view = getPublicUpiConfig();
     const serialised = JSON.stringify(view);
@@ -120,11 +135,7 @@ describe("public UPI configuration", () => {
 
     expect(view.mode).toBe("simulated");
     expect(view.publicKeyId).toBeNull();
-    expect(view.liveModeMissing).toEqual([
-      "RAZORPAY_KEY_ID",
-      "RAZORPAY_KEY_SECRET",
-      "RAZORPAY_WEBHOOK_SECRET",
-    ]);
+    expect(view.liveModeMissing).toEqual(["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"]);
     expect(JSON.stringify(view.liveModeMissing)).not.toContain("=");
   });
 

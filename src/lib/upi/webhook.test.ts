@@ -113,8 +113,8 @@ describe("GET probe", () => {
   });
 });
 
-describe("missing credentials", () => {
-  it("refuses to process a webhook and names what is missing", async () => {
+describe("no signing secret", () => {
+  it("refuses to process a webhook and names the missing variable", async () => {
     const { gatewayOrderId } = openGatewayOrder();
     const body = capturedBody(gatewayOrderId);
 
@@ -124,17 +124,38 @@ describe("missing credentials", () => {
 
     expect(res.status).toBe(503);
     const payload = (await res.json()) as { missing?: string[] };
-    expect(payload.missing).toEqual([
-      "RAZORPAY_KEY_ID",
-      "RAZORPAY_KEY_SECRET",
-      "RAZORPAY_WEBHOOK_SECRET",
-    ]);
+    expect(payload.missing).toEqual(["RAZORPAY_WEBHOOK_SECRET"]);
+  });
+
+  it("stays closed even when checkout itself is live", async () => {
+    // Live checkout does not imply a verifiable webhook; the two are separate.
+    process.env["RAZORPAY_KEY_ID"] = "rzp_test_keyid";
+    process.env["RAZORPAY_KEY_SECRET"] = TEST_KEY_SECRET;
+    const { gatewayOrderId } = openGatewayOrder();
+
+    const res = await deliver(capturedBody(gatewayOrderId));
+
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { missing?: string[] }).missing).toEqual(["RAZORPAY_WEBHOOK_SECRET"]);
   });
 
   it("does not activate a policy when it cannot verify", async () => {
     const { orderId, gatewayOrderId } = openGatewayOrder();
     await deliver(capturedBody(gatewayOrderId));
     expect(getUpiOrder(orderId)?.status).toBe("pending");
+  });
+});
+
+describe("live mode switched off", () => {
+  it("refuses a signed delivery and explains that demo mode is forced", async () => {
+    process.env["UPI_DEMO_MODE"] = "true";
+    process.env["RAZORPAY_WEBHOOK_SECRET"] = WEBHOOK_SECRET;
+    const { gatewayOrderId } = openGatewayOrder();
+
+    const res = await deliver(capturedBody(gatewayOrderId));
+
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { missing?: string[] }).missing).toEqual(["UPI_DEMO_MODE=true"]);
   });
 });
 

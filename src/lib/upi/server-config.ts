@@ -21,6 +21,7 @@ export interface UpiServerConfig {
   mode: UpiMode;
   keyId: string | null;
   keySecret: string | null;
+  /** Null when no webhook signing secret is configured. Server-only. */
   webhookSecret: string | null;
   inrPerEth: number;
   /** Names (never values) of the variables that keep live mode switched off. */
@@ -43,11 +44,18 @@ export function getUpiServerConfig(): UpiServerConfig {
   const missing: string[] = [];
   if (!keyId) missing.push("RAZORPAY_KEY_ID");
   if (!keySecret) missing.push("RAZORPAY_KEY_SECRET");
-  if (!webhookSecret) missing.push("RAZORPAY_WEBHOOK_SECRET");
 
-  // Live mode requires all three: the key pair authenticates outbound API
-  // calls, and the webhook secret is what makes inbound notifications
-  // trustworthy. Without the webhook secret a redirect could be forged.
+  // The key pair is what live checkout needs: it authenticates the outbound
+  // Orders/Payments calls and it is the secret behind the checkout signature.
+  // A settled payment is therefore always proved twice — the HMAC over
+  // `${order_id}|${payment_id}` and a read of the gateway's own Payments API —
+  // so a forged redirect cannot activate a policy even with no webhook.
+  //
+  // The webhook secret is deliberately *not* part of this gate. It buys a
+  // second, out-of-band confirmation channel (and reconciliation when a buyer
+  // closes the browser before the callback fires), not authenticity. Requiring
+  // it to switch on live mode would take the checkout down for a buyer whose
+  // payment is still perfectly verifiable.
   const live = !forcedDemo && missing.length === 0;
 
   return {
@@ -55,7 +63,9 @@ export function getUpiServerConfig(): UpiServerConfig {
     mode: live ? "live" : "simulated",
     keyId: live ? keyId : null,
     keySecret: live ? keySecret : null,
-    webhookSecret: live ? webhookSecret : null,
+    // Kept as read, so the webhook endpoint can tell "no signing secret" apart
+    // from "live mode is off". Never leaves the server.
+    webhookSecret,
     inrPerEth: readInrPerEth(),
     missing,
     forcedDemo,

@@ -53,19 +53,29 @@ server-side only; `getPublicUpiConfig()` is the single place that decides what
 the browser is allowed to know (the publishable key id, and the *names* of any
 missing variables — never their values).
 
-Live mode requires **all three** of `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`
-and `RAZORPAY_WEBHOOK_SECRET`. Without the webhook secret a redirect could be
-forged, so the app refuses to run live rather than guess.
+Live checkout needs **`RAZORPAY_KEY_ID`** and **`RAZORPAY_KEY_SECRET`**. The key
+pair authenticates the outbound Orders and Payments calls and is the secret
+behind the checkout signature, so a settled payment is proved twice over
+(signature HMAC **and** a Payments API read) before a policy is activated. A
+forged callback cannot pass either check.
 
-Point the webhook endpoint in the Razorpay Dashboard at
+`RAZORPAY_WEBHOOK_SECRET` is optional but recommended. It does not decide
+whether a payment is genuine — it adds an out-of-band confirmation channel and
+reconciliation for a buyer who closes the browser before the callback fires. Set
+it and the app also accepts `POST` deliveries on the webhook path below; leave
+it unset and `POST` returns `HTTP 503` naming `RAZORPAY_WEBHOOK_SECRET` rather
+than trusting a request it cannot verify.
+
+To use it, point the webhook endpoint in the Razorpay Dashboard at
 `https://<your-domain>/api/upi/webhook` and subscribe to `payment.captured` and
 `payment.failed`. `GET` on that path returns a small reachability probe.
 
 #### Deploying the secrets to the Cloudflare Worker
 
-Locally, `.env` supplies these to `vite dev`. The deployed Worker does **not**
-read `.env` — it reads Worker secrets, which are encrypted at rest and never
-appear in the repository or in the browser bundle:
+Locally, `vite dev` runs the server inside workerd, so it reads **`.dev.vars`**
+(not `.env`); keep both in step. The deployed Worker reads neither — it reads
+Worker secrets, which are encrypted at rest and never appear in the repository
+or in the browser bundle:
 
 ```sh
 npx wrangler secret put RAZORPAY_KEY_ID
