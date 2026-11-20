@@ -6,7 +6,9 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", ".output", ".vinxi"] },
+  // `contracts/` is a self-contained Hardhat subproject with its own toolchain
+  // (tsconfig, solc, mocha/chai) and is linted by its own tooling.
+  { ignores: ["dist", ".output", ".vinxi", "contracts"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],

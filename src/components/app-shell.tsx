@@ -16,14 +16,14 @@ const NAV_ITEMS = [
   { label: "Buy Insurance", to: "/buy" },
   { label: "My Policies", to: "/policies" },
   { label: "Weather Oracle", to: "/oracle" },
+  { label: "Mandi Prices", to: "/market" },
   { label: "Liquidity Pool", to: "/pool" },
   { label: "Transparency", to: "/activity" },
   { label: "Demo Mode", to: "/demo" },
 ] as const;
 
 type FooterLink =
-  | { label: string; to: (typeof NAV_ITEMS)[number]["to"] }
-  | { label: string; href: string };
+  { label: string; to: (typeof NAV_ITEMS)[number]["to"] } | { label: string; href: string };
 
 const FOOTER_COLUMNS: ReadonlyArray<{ title: string; links: ReadonlyArray<FooterLink> }> = [
   {
@@ -38,6 +38,7 @@ const FOOTER_COLUMNS: ReadonlyArray<{ title: string; links: ReadonlyArray<Footer
     title: "Evidence",
     links: [
       { label: "Weather Oracle", to: "/oracle" },
+      { label: "Mandi Prices", to: "/market" },
       { label: "Liquidity Pool", to: "/pool" },
       { label: "Demo Mode", to: "/demo" },
     ],
@@ -151,7 +152,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   to={item.to}
                   className={cn(
                     "group relative rounded-full px-3 py-2 text-[0.8125rem] font-medium transition-colors duration-200",
-                    active ? "text-terracotta-strong" : "text-muted-foreground hover:text-foreground",
+                    active
+                      ? "text-terracotta-strong"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {item.label}
@@ -233,8 +236,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
               <p className="mt-4 text-[0.8125rem] leading-relaxed">
                 Parametric rainfall cover for the people whose income depends on the weather.
-                Rainfall is verified from the Open-Meteo historical archive; settlement runs
-                against a public Sepolia smart contract.
+                Rainfall is verified from the Open-Meteo historical archive; settlement runs against
+                a public Sepolia smart contract.
               </p>
             </div>
 

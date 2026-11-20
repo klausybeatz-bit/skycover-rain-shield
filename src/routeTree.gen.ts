@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as MarketRouteImport } from './routes/market'
 import { Route as OracleRouteImport } from './routes/oracle'
 import { Route as PoliciesRouteImport } from './routes/policies'
 import { Route as PoolRouteImport } from './routes/pool'
@@ -37,6 +38,11 @@ const DemoRoute = DemoRouteImport.update({
   path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketRoute = MarketRouteImport.update({
+  id: '/market',
+  path: '/market',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OracleRoute = OracleRouteImport.update({
   id: '/oracle',
   path: '/oracle',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/activity': typeof ActivityRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
+  '/market': typeof MarketRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
   '/pool': typeof PoolRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
+  '/market': typeof MarketRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
   '/pool': typeof PoolRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/activity': typeof ActivityRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
+  '/market': typeof MarketRoute
   '/oracle': typeof OracleRoute
   '/policies': typeof PoliciesRoute
   '/pool': typeof PoolRoute
@@ -84,15 +93,31 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/activity' | '/buy' | '/demo' | '/oracle' | '/policies' | '/pool'
+    | '/'
+    | '/activity'
+    | '/buy'
+    | '/demo'
+    | '/market'
+    | '/oracle'
+    | '/policies'
+    | '/pool'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/activity' | '/buy' | '/demo' | '/oracle' | '/policies' | '/pool'
+  to:
+    | '/'
+    | '/activity'
+    | '/buy'
+    | '/demo'
+    | '/market'
+    | '/oracle'
+    | '/policies'
+    | '/pool'
   id:
     | '__root__'
     | '/'
     | '/activity'
     | '/buy'
     | '/demo'
+    | '/market'
     | '/oracle'
     | '/policies'
     | '/pool'
@@ -103,6 +128,7 @@ export interface RootRouteChildren {
   ActivityRoute: typeof ActivityRoute
   BuyRoute: typeof BuyRoute
   DemoRoute: typeof DemoRoute
+  MarketRoute: typeof MarketRoute
   OracleRoute: typeof OracleRoute
   PoliciesRoute: typeof PoliciesRoute
   PoolRoute: typeof PoolRoute
@@ -138,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/market': {
+      id: '/market'
+      path: '/market'
+      fullPath: '/market'
+      preLoaderRoute: typeof MarketRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/oracle': {
       id: '/oracle'
       path: '/oracle'
@@ -167,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   ActivityRoute: ActivityRoute,
   BuyRoute: BuyRoute,
   DemoRoute: DemoRoute,
+  MarketRoute: MarketRoute,
   OracleRoute: OracleRoute,
   PoliciesRoute: PoliciesRoute,
   PoolRoute: PoolRoute,
