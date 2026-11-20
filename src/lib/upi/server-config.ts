@@ -76,6 +76,18 @@ export function getPublicUpiConfig(): UpiConfigView {
     publicKeyId: config.keyId,
     inrPerEth: config.inrPerEth,
     webhookPath: UPI_WEBHOOK_PATH,
+    testMode: isTestKey(config.keyId),
     liveModeMissing: liveModeMissing(config),
   };
+}
+
+/**
+ * Razorpay test keys are publishable and prefixed `rzp_test_`; live keys use
+ * `rzp_live_`. Reading the prefix is therefore safe, and it is the only signal
+ * available at runtime that tells the UI whether a payment was made in the
+ * gateway's test environment. Unknown formats are treated as live (not test),
+ * so a label is never applied that has not been earned.
+ */
+function isTestKey(keyId: string | null): boolean {
+  return typeof keyId === "string" && keyId.startsWith("rzp_test_");
 }

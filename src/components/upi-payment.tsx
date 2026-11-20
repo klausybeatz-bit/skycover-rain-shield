@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, IndianRupee, Info, Loader2, Smartphone, TriangleAlert } from "lucide-react";
+import { BadgeCheck, FlaskConical, IndianRupee, Info, Loader2, Smartphone, TriangleAlert } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { SimulatedBadge } from "@/components/shared";
@@ -314,6 +314,7 @@ export function UpiPaymentPanel({
                   {PHASE_LABEL[phase]}
                 </Badge>
                 {simulated && <SimulatedBadge>Simulated UPI</SimulatedBadge>}
+                {config.testMode && <TestModeBadge />}
               </div>
             </div>
 
@@ -329,6 +330,15 @@ export function UpiPaymentPanel({
               </Notice>
             )}
 
+            {config.testMode && (
+              <Notice tone="warn">
+                <span className="font-semibold">TEST MODE — no real money moves.</span> The gateway is running on a
+                test key pair, so the checkout opens the gateway's own test screen. No bank account is debited and no
+                real money is transferred; the payment is still verified server-side against the gateway before any
+                policy is activated.
+              </Notice>
+            )}
+
             {message && <Notice tone={phase === "paid" ? "success" : "warn"}>{message}</Notice>}
 
             {phase === "paid" && order ? (
@@ -337,7 +347,9 @@ export function UpiPaymentPanel({
                   <BadgeCheck className="size-4" />
                   {order.simulated
                     ? "Simulated payment recorded — no real money moved"
-                    : "Payment verified by the gateway — policy activated"}
+                    : config.testMode
+                      ? "Test-mode payment verified by the gateway — no real money moved"
+                      : "Payment verified by the gateway — policy activated"}
                 </div>
                 <dl className="grid gap-1.5 text-xs text-muted-foreground">
                   <Detail label="Order" value={order.orderId} />
@@ -422,5 +434,18 @@ function Detail({ label, value }: { label: string; value: string }) {
       <dt>{label}</dt>
       <dd className="truncate font-mono text-[0.6875rem] text-foreground">{value}</dd>
     </div>
+  );
+}
+
+/**
+ * Shown whenever the gateway is configured with a test key pair, so a judge can
+ * never mistake a test settlement for transferred money.
+ */
+function TestModeBadge() {
+  return (
+    <Badge variant="outline" className="border-amber/60 bg-amber/15 text-amber-strong">
+      <FlaskConical />
+      TEST MODE
+    </Badge>
   );
 }

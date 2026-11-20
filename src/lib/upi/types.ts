@@ -70,6 +70,14 @@ export interface UpiConfigView {
   publicKeyId: string | null;
   inrPerEth: number;
   webhookPath: string;
+  /**
+   * True when live mode is running on the gateway's TEST key pair. Razorpay
+   * publishes the distinction in the publishable key id itself (`rzp_test_…`
+   * vs `rzp_live_…`), so this is derived from a value that is already public —
+   * no secret is involved. The UI uses it to label the checkout "TEST MODE",
+   * because a test-mode payment must never be presented as money transferred.
+   */
+  testMode: boolean;
   /** Why live mode is off, so the UI can tell judges exactly what is missing. */
   liveModeMissing: string[];
 }

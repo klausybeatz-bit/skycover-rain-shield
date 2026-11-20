@@ -61,6 +61,31 @@ Point the webhook endpoint in the Razorpay Dashboard at
 `https://<your-domain>/api/upi/webhook` and subscribe to `payment.captured` and
 `payment.failed`. `GET` on that path returns a small reachability probe.
 
+#### Deploying the secrets to the Cloudflare Worker
+
+Locally, `.env` supplies these to `vite dev`. The deployed Worker does **not**
+read `.env` — it reads Worker secrets, which are encrypted at rest and never
+appear in the repository or in the browser bundle:
+
+```sh
+npx wrangler secret put RAZORPAY_KEY_ID
+npx wrangler secret put RAZORPAY_KEY_SECRET
+npx wrangler secret put RAZORPAY_WEBHOOK_SECRET
+```
+
+Each command prompts for the value, so no secret is ever written to disk or to
+a shell history by this process. `.env`, `.dev.vars` and any file matching
+`.env.*` (except `.env.example`) are git-ignored; nothing in this repository
+carries a credential.
+
+#### Test mode
+
+Razorpay test credentials are publishable, so the app reads the `rzp_test_`
+prefix of the key id to label the checkout **TEST MODE** and to state on screen
+that no real money moves. Test settlements are still verified against the
+gateway exactly like live ones — the label changes what the customer is told,
+never what the server checks.
+
 ### Demo mode (default when no credentials are set)
 
 If the credentials are absent, or `UPI_DEMO_MODE=true`, the app runs a clearly
