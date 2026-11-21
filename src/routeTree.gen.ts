@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivityRouteImport } from './routes/activity'
+import { Route as AssistantRouteImport } from './routes/assistant'
 import { Route as BuyRouteImport } from './routes/buy'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as MarketRouteImport } from './routes/market'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const ActivityRoute = ActivityRouteImport.update({
   id: '/activity',
   path: '/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuyRoute = BuyRouteImport.update({
@@ -62,6 +68,7 @@ const PoolRoute = PoolRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
+  '/assistant': typeof AssistantRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
   '/market': typeof MarketRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
+  '/assistant': typeof AssistantRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
   '/market': typeof MarketRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activity': typeof ActivityRoute
+  '/assistant': typeof AssistantRoute
   '/buy': typeof BuyRoute
   '/demo': typeof DemoRoute
   '/market': typeof MarketRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/activity'
+    | '/assistant'
     | '/buy'
     | '/demo'
     | '/market'
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activity'
+    | '/assistant'
     | '/buy'
     | '/demo'
     | '/market'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/activity'
+    | '/assistant'
     | '/buy'
     | '/demo'
     | '/market'
@@ -126,6 +138,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivityRoute: typeof ActivityRoute
+  AssistantRoute: typeof AssistantRoute
   BuyRoute: typeof BuyRoute
   DemoRoute: typeof DemoRoute
   MarketRoute: typeof MarketRoute
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/activity'
       fullPath: '/activity'
       preLoaderRoute: typeof ActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/buy': {
@@ -198,6 +218,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivityRoute: ActivityRoute,
+  AssistantRoute: AssistantRoute,
   BuyRoute: BuyRoute,
   DemoRoute: DemoRoute,
   MarketRoute: MarketRoute,

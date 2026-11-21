@@ -17,6 +17,7 @@ const NAV_ITEMS = [
   { label: "My Policies", to: "/policies" },
   { label: "Weather Oracle", to: "/oracle" },
   { label: "Mandi Prices", to: "/market" },
+  { label: "Farm Assistant", to: "/assistant" },
   { label: "Liquidity Pool", to: "/pool" },
   { label: "Transparency", to: "/activity" },
   { label: "Demo Mode", to: "/demo" },
@@ -47,6 +48,7 @@ const FOOTER_COLUMNS: ReadonlyArray<{ title: string; links: ReadonlyArray<Footer
     title: "Explore",
     links: [
       { label: "Overview", to: "/" },
+      { label: "Farm Assistant", to: "/assistant" },
       { label: "Sepolia Explorer", href: EXPLORER_BASE },
     ],
   },
